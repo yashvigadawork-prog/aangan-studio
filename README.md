@@ -1,5 +1,8 @@
 # Aangan Studio: AI lead qualification system
 
+**Live dashboard:** https://aangan-studio-eight.vercel.app  
+**Code:** https://github.com/yashvigadawork-prog/aangan-studio
+
 An AI voice agent answers every incoming enquiry call at Aangan Studio (Pune), 24/7. It qualifies the caller against the owner's rules, books a designer consultation while still on the call, and hands the lead to the right people afterwards.
 
 **The problem:** about 200 enquiries a month, 48% get no reply within 48 hours, a third arrive outside office hours, and a reply within an hour converts 4x better.
@@ -70,7 +73,7 @@ npm run seed:demo         # optional: demo data (npm run seed:clear removes it)
 npm test
 npm start                 # http://localhost:3000
 ```
-To let Vaani reach a local server, expose it with ngrok. On Vercel, use the deployment URL instead.
+To let Vaani reach a local server, expose it with ngrok. For a permanent address, deploy to Vercel (`vercel deploy --prod`), add the variables below in the Vercel project settings, and point Vaani's tools and webhook at the deployment URL.
 
 ## Environment variables
 See `.env.example`: `DATABASE_URL`, `WEBHOOK_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `HUBSPOT_ACCESS_TOKEN`, `CAL_API_KEY`, `CAL_EVENT_TYPE_ID`, `DASHBOARD_URL`.

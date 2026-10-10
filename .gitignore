@@ -4,3 +4,5 @@ node_modules/
 
 # Internal price guide: never publish (the voice agent must never know prices)
 knowledge/pricing.md
+.vercel
+.env*

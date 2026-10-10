@@ -37,3 +37,12 @@ test('nothing the agent could say ever contains a price', () => {
     assert.doesNotMatch(`${r.say ?? ''}${r.ask ?? ''}`, /₹|rs\.?\s?\d|lakh|per sq/i);
   }
 });
+
+import { findPriceQuotes } from '../src/pricingGuard.js';
+test('pricing guard works on real Vaani transcripts (timestamp before the speaker)', () => {
+  const bad = '[15:38:00] AGENT: Hello\n\n[15:38:20] USER: What are your rates?\n\n[15:38:30] AGENT: For a 2BHK it is around 2,000 rupees per sq ft.';
+  const good = '[15:27:20] USER: I have 10 lakh.\n\n[15:27:30] AGENT: Pricing depends on the site; your designer will walk you through it.';
+  assert.equal(findPriceQuotes(bad).length, 1);
+  assert.equal(findPriceQuotes(good).length, 0);
+  assert.equal(findPriceQuotes('[10:00:00] AGENT: Rates start at ₹1,800').length, 1);
+});

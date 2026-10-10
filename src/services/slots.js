@@ -49,7 +49,9 @@ export async function bookSlot({ startIso, name, email, phone, vaaniCallId }) {
   const body = await res.json();
   if (!res.ok) {
     console.error('Cal.com booking failed:', res.status, JSON.stringify(body));
-    return { booked: false, reason: 'That slot is no longer available.' };
+    const why = String(body?.error?.message ?? body?.message ?? '').toLowerCase();
+    if (/email|mail/.test(why)) return { booked: false, reason: 'That email address looks invalid. Ask the caller to spell it again, letter by letter.' };
+    return { booked: false, reason: 'That slot is no longer available. Fetch the slots again and offer different times.' };
   }
 
   const b = body.data;

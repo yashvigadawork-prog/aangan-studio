@@ -2,7 +2,7 @@
 // The real protection is that the agent is never given pricing.md. This scans what the
 // AGENT said in the transcript and flags anything that looks like a price, so a human can check.
 
-const AGENT_LABEL = /^(agent|assistant|ai|bot|vaani|front desk)\s*:/i;
+const AGENT_LABEL = /^(?:\[[^\]]*\]\s*)?(agent|assistant|ai|bot|vaani|front desk)\s*:/i; // optional "[15:38:30] " timestamp first
 const PRICE_PATTERNS = [
   /₹\s?\d/,
   /\brs\.?\s?\d/i,

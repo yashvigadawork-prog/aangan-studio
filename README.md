@@ -28,6 +28,11 @@ flowchart LR
 
 **Phase 3, log, notify, review (every call).** When the call ends, Vaani posts the transcript, recording and details to `/api/webhook/vaani`. Every call is saved to Postgres with its cost. Qualified leads also create a HubSpot contact and a Telegram alert for the designer. The dashboard shows declined calls so the front desk can re-qualify any with one click.
 
+### Component map
+![Component map](docs/component-map.png)
+
+The same map as an editable vector file: [`docs/component-map.svg`](docs/component-map.svg).
+
 ### The pricing rule
 The agent must never quote a price. It is never given the studio's internal `pricing.md` (not included in this repo), so it cannot leak one, and it is only given the one allowed reply. As a safety net, `src/pricingGuard.js` scans everything the agent said and flags any call where it looks like a price was mentioned.
 

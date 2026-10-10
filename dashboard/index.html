@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aangan Studio Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#faf8f5; --card:#fff; --ink:#201c18; --muted:#6f675f; --line:#e8e2da; --accent:#b4572b; --good:#2f7d4f; --bad:#b3402f; --soft:#f3ece4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#171411; --card:#221e1a; --ink:#f2ece4; --muted:#a39a90; --line:#383029; --accent:#e08a5b; --good:#5fbf86; --bad:#e8806f; --soft:#2c2620; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { padding:20px 16px 8px; max-width:1100px; margin:auto; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+  h1 { font-size:22px; margin:0; } h2 { font-size:16px; margin:0 0 12px; }
+  .sub { color:var(--muted); font-size:13px; }
+  main { max-width:1100px; margin:auto; padding:8px 16px 48px; display:grid; gap:16px; }
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .kpi .n { font-size:30px; font-weight:650; line-height:1.1; } .kpi .l { color:var(--muted); font-size:13px; margin-top:4px; }
+  .two { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); }
+  .funnel .row { display:grid; grid-template-columns:130px 1fr 40px; gap:8px; align-items:center; margin:8px 0; font-size:14px; }
+  .bar { height:18px; background:var(--accent); border-radius:5px; min-width:3px; transition:width .4s; }
+  .note { font-size:12.5px; color:var(--muted); margin-top:10px; }
+  select, button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:8px; padding:6px 10px; }
+  button.go { background:var(--accent); color:#fff; border-color:var(--accent); cursor:pointer; } button.go:disabled { opacity:.5; cursor:default; }
+  .tablewrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--muted); font-weight:550; font-size:12.5px; }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:99px; background:var(--soft); color:var(--muted); margin-left:6px; }
+  .money { color:var(--good); } canvas { max-height:260px; }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Aangan Studio · Lead desk</h1><div class="sub">Incoming phone enquiries, answered 24/7 by the voice assistant</div></div>
+  <label class="sub">Period
+    <select id="days"><option value="">All time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+  </label>
+</header>
+<main>
+  <section class="grid" id="kpis"></section>
+
+  <section class="two">
+    <div class="card funnel"><h2>Conversion funnel</h2><div id="funnel"></div></div>
+    <div class="card"><h2>Why calls weren't qualified</h2><canvas id="reasons"></canvas><div class="note" id="reasonsNote"></div></div>
+  </section>
+
+  <section class="two">
+    <div class="card"><h2>Calls per day</h2><canvas id="daily"></canvas></div>
+    <div class="card"><h2>Cost &amp; return</h2><div id="roi"></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Front-desk review: calls the assistant declined</h2>
+    <div class="sub" style="margin:-6px 0 10px">Rejecting a good lead costs more than passing a bad one. If a call looks wrong, re-qualify it and the designer is alerted straight away.</div>
+    <div class="tablewrap"><table><thead><tr><th>When</th><th>Caller</th><th>Project</th><th>Why declined</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const inr = (n) => '₹' + (n < 100 ? n.toFixed(2) : Math.round(n).toLocaleString('en-IN'));
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + '%';
+const esc = (s) => String(s ?? '—').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+let charts = {};
+
+function chart(id, cfg) { charts[id]?.destroy(); charts[id] = new Chart($(id), cfg); }
+
+async function load() {
+  const q = $('days').value ? `?days=${$('days').value}` : '';
+  const s = await (await fetch('/api/dashboard/stats' + q)).json();
+  const roi = s.roi;
+
+  $('kpis').innerHTML = [
+    [s.total, 'Calls answered'],
+    [pct(s.answered_fast, s.total), 'Answered in under 5 minutes <br><span class="sub">before: 48% got no reply within 48 hours</span>'],
+    [pct(s.after_hours, s.total), `Arrived outside 10am–7pm (${s.after_hours} calls)`],
+    [pct(s.qualified, s.total), `Qualified (${s.qualified} of ${s.total})`],
+    [s.booked, 'Designer meetings booked'],
+  ].map(([n, l]) => `<div class="card kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+
+  const steps = [['Calls', s.total], ['Qualified', s.qualified], ['Meeting booked', s.booked], ['In HubSpot', s.in_hubspot]];
+  $('funnel').innerHTML = steps.map(([l, n]) =>
+    `<div class="row"><span>${l}</span><div class="bar" style="width:${s.total ? (n / s.total) * 100 : 0}%"></div><b>${n}</b></div>`).join('') +
+    `<div class="note">${s.overridden} call(s) re-qualified by the front desk. ${s.pricing_flagged} call(s) flagged for a possible price quote.</div>`;
+
+  const labels = Object.keys(s.reasons), vals = Object.values(s.reasons);
+  $('reasonsNote').textContent = labels.length ? '' : 'No declined calls in this period.';
+  chart('reasons', { type: 'doughnut', data: { labels, datasets: [{ data: vals, backgroundColor: ['#b4572b','#d9a066','#7a9e7e','#6f8fb0','#9b7bb0','#c9b8a6','#8c8c8c'] }] },
+    options: { plugins: { legend: { position: 'right', labels: { color: getComputedStyle(document.body).color } } } } });
+
+  chart('daily', { type: 'bar', data: { labels: s.daily.map((d) => d.day.slice(5)),
+    datasets: [{ label: 'All calls', data: s.daily.map((d) => d.calls), backgroundColor: '#d9a066' },
+               { label: 'Qualified', data: s.daily.map((d) => d.qualified), backgroundColor: '#b4572b' }] },
+    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { labels: { color: getComputedStyle(document.body).color } } } } });
+
+  $('roi').innerHTML = `
+    <table>
+      <tr><td>Voice assistant (Vaani) usage</td><td>${inr(s.vaani_cost)}</td></tr>
+      <tr><td>AI scoring (LLM)</td><td>${inr(s.llm_cost)}</td></tr>
+      <tr><td>Hosting, database, alerts, CRM</td><td>₹0 (free tiers)</td></tr>
+      <tr><td><b>Total system cost</b></td><td><b>${inr(s.system_cost_total)}</b> · ${inr(s.cost_per_call)} per call</td></tr>
+      <tr><td><b>Estimated extra projects won</b></td><td class="money"><b>${roi.extra_projects.toFixed(2)}</b></td></tr>
+      <tr><td><b>Estimated extra revenue</b></td><td class="money"><b>₹${roi.revenue_lakh.toFixed(1)} lakh</b></td></tr>
+    </table>
+    <div class="note">Estimate = booked meetings × ${Math.round(roi.assumptions.unansweredShare * 100)}% that used to go unanswered × (${roi.assumptions.fastResponseMultiplier}× − 1) uplift × ${Math.round(roi.assumptions.baselineConversion * 100)}% baseline conversion (assumed) × ₹${roi.assumptions.avgProjectLakh} lakh per project. Change these in <code>src/config.js</code>.</div>`;
+
+  const rows = await (await fetch('/api/dashboard/unqualified')).json();
+  $('rows').innerHTML = rows.length ? rows.map((r) => `
+    <tr id="r${r.id}">
+      <td>${new Date(r.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</td>
+      <td>${esc(r.caller_name)}${r.is_demo ? '<span class="tag">demo</span>' : ''}<br><span class="sub">${esc(r.caller_phone)}</span></td>
+      <td>${esc(r.property_type)}${r.area_sqft ? ', ' + r.area_sqft + ' sq ft' : ''}${r.location ? ' · ' + esc(r.location) : ''}<br><span class="sub">${esc(r.scope)}${r.end_date ? ' · finish by ' + r.end_date : r.timeline ? ' · ' + esc(r.timeline) : ''}</span></td>
+      <td>${esc(r.qualification_reason)}${r.recording_url ? ` · <a href="${esc(r.recording_url)}" target="_blank" rel="noopener">recording</a>` : ''}</td>
+      <td><button class="go" onclick="requalify(${r.id}, this)">Re-qualify &amp; send to designer</button></td>
+    </tr>`).join('') : '<tr><td colspan="5" class="sub">Nothing to review.</td></tr>';
+}
+
+// Two-step button instead of confirm(): browser pop-ups are blocked in some browsers and panes.
+async function requalify(id, btn) {
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1'; btn.textContent = 'Click again to confirm';
+    setTimeout(() => { if (btn.isConnected && !btn.disabled) { delete btn.dataset.armed; btn.innerHTML = 'Re-qualify &amp; send to designer'; } }, 4000);
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch(`/api/dashboard/calls/${id}/requalify`, { method: 'POST' });
+    if (!r.ok) throw new Error(r.status);
+    load();
+  } catch (e) {
+    btn.disabled = false; delete btn.dataset.armed; btn.textContent = 'Failed, try again';
+  }
+}
+
+$('days').addEventListener('change', load);
+load();
+</script>
+</body>
+</html>

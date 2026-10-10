@@ -1,0 +1,27 @@
+{
+  "name": "aangan-studio",
+  "version": "1.0.0",
+  "description": "AI voice lead qualification, booking and CRM hand-off for Aangan Studio",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:setup": "node db/setup.js",
+    "seed:demo": "node db/seed-demo.js",
+    "seed:clear": "node db/seed-demo.js --clear"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "pg": "^8.23.1"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "private": true
+}

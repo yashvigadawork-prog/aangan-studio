@@ -1,0 +1,6 @@
+node_modules/
+.env
+.DS_Store
+
+# Internal price guide: never publish (the voice agent must never know prices)
+knowledge/pricing.md

@@ -6,3 +6,6 @@ node_modules/
 knowledge/pricing.md
 .vercel
 .env*
+
+# Private: contains the webhook secret
+vaani-addresses.txt
